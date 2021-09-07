@@ -8,8 +8,9 @@ use Arcanedev\Localization\Contracts\LocalesManager as LocalesManagerContract;
 use Arcanedev\Localization\Contracts\Localization as LocalizationContract;
 use Arcanedev\Localization\Contracts\Negotiator as NegotiatorContract;
 use Arcanedev\Localization\Contracts\RouteTranslator as RouteTranslatorContract;
+use Arcanedev\Localization\Contracts\DynamicRouteTranslator as DynamicRouteTranslatorContract; // Dynamic_route
 use Arcanedev\Localization\Localization;
-use Arcanedev\Localization\Utilities\{LocalesManager, Negotiator, RouteTranslator};
+use Arcanedev\Localization\Utilities\{LocalesManager, Negotiator, RouteTranslator, DynamicRouteTranslator};
 use Arcanedev\Support\Providers\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
 
@@ -32,6 +33,7 @@ class DeferredServicesProvider extends ServiceProvider implements DeferrableProv
     {
         $this->registerLocalization();
         $this->registerRouteTranslator();
+        $this->registerDynamicRouteTranslator(); // Dynamic_route
         $this->registerLocalesManager();
         $this->registerLocaleNegotiator();
     }
@@ -46,6 +48,7 @@ class DeferredServicesProvider extends ServiceProvider implements DeferrableProv
         return [
             LocalizationContract::class,
             RouteTranslatorContract::class,
+            DynamicRouteTranslatorContract::class, // Dynamic_route
             LocalesManagerContract::class,
             NegotiatorContract::class,
         ];
@@ -70,6 +73,14 @@ class DeferredServicesProvider extends ServiceProvider implements DeferrableProv
     private function registerRouteTranslator(): void
     {
         $this->singleton(RouteTranslatorContract::class, RouteTranslator::class);
+    }
+
+    /**
+     * Dynamic_route
+     */
+    private function registerDynamicRouteTranslator():void
+    {
+        $this->singleton(DynamicRouteTranslatorContract::class, DynamicRouteTranslator::class);
     }
 
     /**

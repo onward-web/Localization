@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Arcanedev\Localization\Utilities;
 
 use Arcanedev\Localization\Contracts\RouteTranslator as RouteTranslatorContract;
+use Arcanedev\Localization\Contracts\DynamicRouteTranslator as DynamicRouteTranslatorContract; // Dynamic_route
 use Arcanedev\Localization\Entities\LocaleCollection;
 use Arcanedev\Localization\Exceptions\InvalidTranslationException;
 use Illuminate\Contracts\Translation\Translator;
+
 
 /**
  * Class     RouteTranslator
@@ -28,6 +30,15 @@ class RouteTranslator implements RouteTranslatorContract
      */
     private $translator;
 
+    // Dynamic_route
+    /**
+     * The translator instance.
+     *
+     * @var \Arcanedev\Localization\Contracts\DynamicRouteTranslatorContract
+     */
+    private $dynamicTranslator;
+    // Dynamic_route end
+
     /**
      * Current route.
      *
@@ -42,20 +53,23 @@ class RouteTranslator implements RouteTranslatorContract
      */
     protected $translatedRoutes = [];
 
+
     /* -----------------------------------------------------------------
      |  Constructor
      | -----------------------------------------------------------------
      */
-
+    // Dynamic_route
     /**
      * Create RouteTranslator instance.
      *
      * @param  \Illuminate\Contracts\Translation\Translator  $translator
      */
-    public function __construct(Translator $translator)
+    public function __construct(Translator $translator, DynamicRouteTranslatorContract $dynamicRouteTranslator)
     {
         $this->translator = $translator;
+        $this->dynamicRouteTranslator = $dynamicRouteTranslator;
     }
+    // Dynamic_route end
 
     /* -----------------------------------------------------------------
      |  Getters & Setters
@@ -219,10 +233,15 @@ class RouteTranslator implements RouteTranslatorContract
         if ( ! ($locale === $defaultLocale && $defaultHidden) || $showHiddenLocale)
             $url = '/'.$locale;
 
-        if ($this->hasTranslation($transKey, $locale))
-            $url = Url::substituteAttributes($attributes, $url.'/'.$this->trans($transKey, $locale));
+        if(in_array($transKey, config('dynamic-url.candidates_route_names', []), true)){
+            return $this->dynamicRouteTranslator->getUrlFromRouteName($url, $locale, $transKey, $attributes);
+        }else{
+            if ($this->hasTranslation($transKey, $locale))
+                $url = Url::substituteAttributes($attributes, $url.'/'.$this->trans($transKey, $locale));
 
-        return $url;
+            return $url;
+        }
+
     }
 
     /**
@@ -237,6 +256,7 @@ class RouteTranslator implements RouteTranslatorContract
      */
     private function translate($key, $locale = null): string
     {
+
         if (is_null($locale))
             $locale = $this->translator->getLocale();
 
@@ -278,5 +298,10 @@ class RouteTranslator implements RouteTranslatorContract
     public function hasTranslation($key, $locale = null)
     {
         return $this->translator->has($key, $locale);
+    }
+
+
+    public function getDynamicDataFromUrl($url, $attributes, $fromLocale){
+        return $this->dynamicRouteTranslator->getDynamicDataFromUrl($url, $attributes, $fromLocale);
     }
 }

@@ -40,6 +40,7 @@ class TranslationRedirect extends Middleware
         // If the request URL is ignored from localization.
         if ($this->shouldIgnore($request)) return $next($request);
 
+
         return is_null($translatedUrl = $this->getTranslatedUrl($request))
             ? $next($request)
             : $this->makeRedirectResponse($translatedUrl);
@@ -98,7 +99,7 @@ class TranslationRedirect extends Middleware
      * @return array
      */
     private function fireEvent($locale, $route, $attributes)
-    {
+    {        
         $response = event(self::EVENT_NAME, [$locale, $route, $attributes]);
 
         if ( ! empty($response))
