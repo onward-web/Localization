@@ -50,7 +50,8 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
 
     }
 
-    public function getUrlFromRouteName($url, $locale, $routeName, $attributes = []){
+    public function getUrlFromRouteName($url, $locale, $routeName, $attributes = [], $attributesSluged = false){
+
         $this->prepareDinamicRoute();
 
         // получаем параметры динамического роута
@@ -66,12 +67,12 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
             }
             
             // при числовых значених получаем slug из базы, если string то slug уже в атрибутах и формировать запрос в базу уже не нужно
-            if(is_int($paramValue)){
+            if($attributesSluged){
+                $url .= '/'.$paramValue;
+            }else{
                 //ищем в по modelParamRelation модель которая отвичает за сохранения параметра
                 $model = $this->findModelByParam($routeParam);
                 $url .= '/'.(new $model)->findLocalisationSlugByItem($paramValue, $routeParam, $locale);
-            }else{
-                $url .= '/'.$paramValue;
             }
         }
 
@@ -90,6 +91,10 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
     }
 
     public function getDynamicDataFromUrl($url, $attributes, $fromLocale){
+        if(empty($url)){
+            return false;
+        }
+
 
         $this->prepareDinamicRoute();
 

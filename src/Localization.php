@@ -295,10 +295,11 @@ class Localization implements LocalizationContract
      * @param  string|null  $url
      * @param  array        $attributes
      * @param  bool|false   $showHiddenLocale
+     * @param  bool|false   $attributesSluged
      *
      * @return string|false
      */
-    public function getLocalizedURL($locale = null, $url = null, array $originalAttributes = [], $showHiddenLocale = false, $fromLocale = null)
+    public function getLocalizedURL($locale = null, $url = null, array $originalAttributes = [], $showHiddenLocale = false, $fromLocale = null, $attributesSluged = false)
     {
 
 
@@ -327,14 +328,13 @@ class Localization implements LocalizationContract
                     $locale,
                     $this->routeTranslator->getCurrentRoute(),
                     $attributes,
-                    $showHiddenLocale
+                    $showHiddenLocale,
+                    $attributesSluged
                 );
             }
 
             $url = $this->request()->fullUrl();
         }
-
-
 
 
         // $originalAttributes пока не используем
@@ -344,7 +344,8 @@ class Localization implements LocalizationContract
                 $locale,
                 $dynamicDataFromUrl['routeName'],
                 $dynamicDataFromUrl['findedItems'],
-                $showHiddenLocale
+                $showHiddenLocale,
+                $attributesSluged
             );
 
             return $res;
@@ -356,7 +357,7 @@ class Localization implements LocalizationContract
             ($translatedRoute = $this->findTranslatedRouteByUrl($url, $attributes, $this->getCurrentLocale()))
         ) {
             
-            return $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale);
+            return $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
         }
 
 
@@ -369,7 +370,7 @@ class Localization implements LocalizationContract
         );
 
         if ($translatedRoute !== false){
-            return $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale);
+            return $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
         }
 
 
@@ -433,7 +434,6 @@ class Localization implements LocalizationContract
      * @param  string  $url
      * @param  array   $attributes
      * @param  string  $locale
-     *
      * @return string|false
      */
     private function findTranslatedRouteByUrl($url, $attributes, $locale)
@@ -443,7 +443,7 @@ class Localization implements LocalizationContract
 
         // check if this url is a translated url
         foreach ($this->routeTranslator->getTranslatedRoutes() as $translatedRoute) {
-            $translatedUrl = $this->getUrlFromRouteName($locale, $translatedRoute, $attributes);
+            $translatedUrl = $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, false, false, false);
 
             if ($this->getNonLocalizedURL($translatedUrl) === $this->getNonLocalizedURL($url))
                 return $translatedRoute;
@@ -459,10 +459,11 @@ class Localization implements LocalizationContract
      * @param  string       $transKey
      * @param  array        $attributes
      * @param  bool|false   $showHiddenLocale
+     * @param  bool|false   $attributesSluged
      *
      * @return string|false
      */
-    public function getUrlFromRouteName($locale, $transKey, array $attributes = [], $showHiddenLocale = false)
+    public function getUrlFromRouteName($locale, $transKey, array $attributes = [], $showHiddenLocale = false, $attributesSluged = false )
     {
 
         $this->isLocaleSupportedOrFail($locale);
@@ -473,7 +474,8 @@ class Localization implements LocalizationContract
             $transKey,
             $attributes,
             $this->isDefaultLocaleHiddenInUrl(),
-            $showHiddenLocale
+            $showHiddenLocale,
+            $attributesSluged
         );
 
 

@@ -219,11 +219,12 @@ class RouteTranslator implements RouteTranslatorContract
      * @param  array        $attributes
      * @param  bool|false   $defaultHidden
      * @param  bool|false   $showHiddenLocale
+     * @param  bool|false   $attributesSluged
      *
      * @return string
      */
     public function getUrlFromRouteName(
-        $locale, $defaultLocale, $transKey, $attributes = [], $defaultHidden = false, $showHiddenLocale = false
+        $locale, $defaultLocale, $transKey, $attributes = [], $defaultHidden = false, $showHiddenLocale = false, $attributesSluged = false
     ) {
         if ( ! is_string($locale))
             $locale = $defaultLocale;
@@ -234,7 +235,7 @@ class RouteTranslator implements RouteTranslatorContract
             $url = '/'.$locale;
 
         if(in_array($transKey, config('dynamic-url.candidates_route_names', []), true)){
-            return $this->dynamicRouteTranslator->getUrlFromRouteName($url, $locale, $transKey, $attributes);
+            return $this->dynamicRouteTranslator->getUrlFromRouteName($url, $locale, $transKey, $attributes, $attributesSluged);
         }else{
             if ($this->hasTranslation($transKey, $locale))
                 $url = Url::substituteAttributes($attributes, $url.'/'.$this->trans($transKey, $locale));
