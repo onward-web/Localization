@@ -32,7 +32,7 @@ class Router
                 config('localization.route.middleware', [])
             ));
 
-            $attributes = array_merge($attributes, [
+            $attributes = array_merge_recursive($attributes, [
                 'prefix'     => localization()->setLocale(),
                 'middleware' => $activeMiddleware,
             ]);
