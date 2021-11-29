@@ -72,7 +72,7 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
             }else{
                 //ищем в по modelParamRelation модель которая отвичает за сохранения параметра
                 $model = $this->findModelByParam($routeParam);
-                $url .= '/'.(new $model)->findLocalisationSlugByItem($paramValue, $routeParam, $locale);
+                $url .= '/'.(new $model)->findLocalisationSlugByItem((int)$paramValue, (string)$routeParam, (string)$locale);
             }
         }
 
