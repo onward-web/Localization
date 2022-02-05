@@ -291,7 +291,7 @@ class Localization implements LocalizationContract
     /**
      * Returns an URL adapted to $locale or current locale.
      *
-     * @param  string|null  $locale
+     * @param  string|null  $locale //локаль к
      * @param  string|null  $url
      * @param  array        $attributes
      * @param  bool|false   $showHiddenLocale
@@ -314,7 +314,7 @@ class Localization implements LocalizationContract
         if (empty($originalAttributes))
             $attributes = Url::extractAttributes($url);
         else{
-            $originalAttributes = $attributes;
+            $attributes = $originalAttributes;
         }
 
 
