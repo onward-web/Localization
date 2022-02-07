@@ -26,11 +26,11 @@ if ( ! function_exists('localized_route')) {
      *
      * @return string
      */
-    function localized_route($transRoute, array $attributes = [], $locale = null)
+    function localized_route($transRoute, array $attributes = [], $locale = null, $showHiddenLocale = false, $attributesSluged = false)
     {
         if (is_null($locale))
             $locale = localization()->getCurrentLocale();
 
-        return localization()->getUrlFromRouteName($locale, $transRoute, $attributes);
+        return localization()->getUrlFromRouteName($locale, $transRoute, $attributes, $showHiddenLocale, $attributesSluged);
     }
 }
