@@ -3,7 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="6b165d05-b9f6-4d06-868f-b47c63c7cb92" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entities/Locale.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entities/Locale.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Utilities/DynamicRouteTranslator.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Utilities/DynamicRouteTranslator.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Utilities/Url.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Utilities/Url.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,7 +62,8 @@
       <workItem from="1650972343644" duration="599000" />
       <workItem from="1652478547781" duration="2456000" />
       <workItem from="1653060805578" duration="599000" />
-      <workItem from="1672994417624" duration="67000" />
+      <workItem from="1672994417624" duration="116000" />
+      <workItem from="1676463931498" duration="3502000" />
     </task>
     <task id="LOCAL-00001" summary="еуые">
       <created>1638200354087</created>
@@ -81,9 +83,13 @@
     <option name="LAST_COMMIT_MESSAGE" value="еуые" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="986" y="433" width="587" height="534" key="find.popup" timestamp="1672994420400">
+    <state x="1010" y="454" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog" timestamp="1676490139875">
       <screen x="0" y="0" width="2560" height="1400" />
     </state>
-    <state x="986" y="433" width="587" height="534" key="find.popup/0.0.2560.1400@0.0.2560.1400" timestamp="1672994420400" />
+    <state x="1010" y="454" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog/0.0.2560.1400@0.0.2560.1400" timestamp="1676490139875" />
+    <state x="986" y="433" width="587" height="556" key="find.popup" timestamp="1676490119844">
+      <screen x="0" y="0" width="2560" height="1400" />
+    </state>
+    <state x="986" y="433" width="587" height="556" key="find.popup/0.0.2560.1400@0.0.2560.1400" timestamp="1676490119844" />
   </component>
 </project>

@@ -24,7 +24,7 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
 
     public function __construct()
     {
-        
+
         $this->candidatesRouteNames = config('dynamic-url.candidates_route_names', []);
 
         $this->modelParamRelation = config('dynamic-url.model_param_relation', []);
@@ -65,7 +65,7 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
             if(is_null($paramValue)){
                 throw new \Exception('Invalid params: "'.$routeParam.'" for route: '.$routeName);
             }
-            
+
             // при числовых значених получаем slug из базы, если string то slug уже в атрибутах и формировать запрос в базу уже не нужно
             if($attributesSluged){
                 $url .= '/'.$paramValue;
@@ -73,6 +73,19 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
                 //ищем в по modelParamRelation модель которая отвичает за сохранения параметра
                 $model = $this->findModelByParam($routeParam);
                 $url .= '/'.(new $model)->findLocalisationSlugByItem((int)$paramValue, (string)$routeParam, (string)$locale);
+            }
+
+            // custom_attribute_in_url_modifly_2 , удаляем добавленный атрибут, в конечном итоге
+            $attributes = Arr::except($attributes, $routeParam);
+        }
+
+        // custom_attribute_in_url_modifly_3
+        if($attributes) {
+            $query = parse_url($url, PHP_URL_QUERY);
+            if ($query) {
+                $url .= '&' . Arr::query($attributes);
+            } else {
+                $url .= '?' . Arr::query($attributes);
             }
         }
 

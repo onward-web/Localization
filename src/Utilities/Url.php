@@ -7,6 +7,7 @@ namespace Arcanedev\Localization\Utilities;
 use Arcanedev\Localization\Contracts\RouteBindable;
 use Arcanedev\Localization\Contracts\Url as UrlContract;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 /**
  * Class     Url
@@ -51,15 +52,35 @@ class Url implements UrlContract
      */
     public static function substituteAttributes(array $attributes, $uri)
     {
+        $notReplacedAttributes = [];
         foreach ($attributes as $key => $value) {
-            if ($value instanceof RouteBindable)
+            if ($value instanceof RouteBindable){
                 $value = $value->getWildcardValue();
+            }
+            $countReplace = 0;
+            $uri = str_replace(['{'.$key.'?}', '{'.$key.'}'], (string) $value, $uri, $countReplace);
 
-            $uri = str_replace(['{'.$key.'?}', '{'.$key.'}'], (string) $value, $uri);
+            if($countReplace === 0){
+                $notReplacedAttributes[$key] = $value;
+            }
         }
 
+        // custom_attribute_in_url_modifly_1
+        if($notReplacedAttributes){
+            $query = parse_url($uri, PHP_URL_QUERY);
+            if ($query) {
+                $uri .=  '&'.Arr::query($notReplacedAttributes);
+            } else {
+                $uri .= '?'.Arr::query($notReplacedAttributes);
+            }
+        }
+
+
         // delete empty optional arguments that are not in the $attributes array
-        return preg_replace('/\/{[^)]+\?}/', '', $uri);
+        $uri = preg_replace('/\/{[^)]+\?}/', '', $uri);
+
+
+        return $uri;
     }
 
     /**
