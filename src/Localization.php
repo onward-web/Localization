@@ -341,7 +341,7 @@ class Localization implements LocalizationContract
                     $attributesSluged
                 );
                 if($alloCache){
-                    self::$localizedURLCache[$cacheKey] = $res;
+                    self::$localizedURLCache[$cacheKey] = $resUrlFromRouteName;
                 }
 
                 return $resUrlFromRouteName;
