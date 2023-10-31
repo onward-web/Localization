@@ -12,7 +12,7 @@ use Arcanedev\Localization\Utilities\Url;
 use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 use Illuminate\Contracts\View\Factory as ViewFactoryContract;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Arr;
 /**
  * Class     Localization
  *
@@ -52,6 +52,9 @@ class Localization implements LocalizationContract
      * @var \Arcanedev\Localization\Contracts\LocalesManager
      */
     private $localesManager;
+
+
+    private static $localizedURLCache = [];
 
     /* -----------------------------------------------------------------
      |  Constructor
@@ -299,8 +302,14 @@ class Localization implements LocalizationContract
      *
      * @return string|false
      */
-    public function getLocalizedURL($locale = null, $url = null, array $originalAttributes = [], $showHiddenLocale = false, $fromLocale = null, $attributesSluged = false)
+    public function getLocalizedURL($locale = null, $url = null, array $originalAttributes = [], $showHiddenLocale = false, $fromLocale = null, $attributesSluged = false, $alloCache = true)
     {
+        $args = func_get_args();
+        $cacheKey = md5(serialize($args));
+
+        if(array_key_exists($cacheKey, self::$localizedURLCache) && $alloCache){
+            return self::$localizedURLCache[$cacheKey];
+        }
 
 
         if (is_null($locale))
@@ -309,7 +318,7 @@ class Localization implements LocalizationContract
         if (empty($fromLocale))
             $fromLocale = $this->getCurrentLocale();
 
-        $this->isLocaleSupportedOrFail($locale);      
+        $this->isLocaleSupportedOrFail($locale);
 
         if (empty($originalAttributes))
             $attributes = Url::extractAttributes($url);
@@ -324,13 +333,18 @@ class Localization implements LocalizationContract
                 if (empty($attributes))
                     $attributes = $this->request()->route()->parameters();
 
-                return $this->getUrlFromRouteName(
+                $resUrlFromRouteName = $this->getUrlFromRouteName(
                     $locale,
                     $this->routeTranslator->getCurrentRoute(),
                     $attributes,
                     $showHiddenLocale,
                     $attributesSluged
                 );
+                if($alloCache){
+                    self::$localizedURLCache[$cacheKey] = $res;
+                }
+
+                return $resUrlFromRouteName;
             }
 
             $url = $this->request()->fullUrl();
@@ -347,6 +361,9 @@ class Localization implements LocalizationContract
                 $showHiddenLocale,
                 $attributesSluged
             );
+            if($alloCache){
+                self::$localizedURLCache[$cacheKey] = $res;
+            }
 
             return $res;
         }
@@ -356,8 +373,14 @@ class Localization implements LocalizationContract
             $locale &&
             ($translatedRoute = $this->findTranslatedRouteByUrl($url, $attributes, $this->getCurrentLocale()))
         ) {
-            
-            return $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
+
+            $res = $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
+
+            if($alloCache){
+                self::$localizedURLCache[$cacheKey] = $res;
+            }
+
+            return $res;
         }
 
 
@@ -370,7 +393,13 @@ class Localization implements LocalizationContract
         );
 
         if ($translatedRoute !== false){
-            return $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
+            $res = $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
+
+            if($alloCache){
+                self::$localizedURLCache[$cacheKey] = $res;
+            }
+
+            return $res;
         }
 
 
@@ -388,9 +417,15 @@ class Localization implements LocalizationContract
         if (filter_var($url, FILTER_VALIDATE_URL)) return $url;
 
 
-        return $this->createUrlFromUri(
+        $res  = $this->createUrlFromUri(
             empty($url) ? $parsedUrl['path'] : $url
         );
+
+        if($alloCache){
+            self::$localizedURLCache[$cacheKey] = $res;
+        }
+
+        return $res;
     }
 
     /**
@@ -420,7 +455,7 @@ class Localization implements LocalizationContract
         $view = $this->app[ViewFactoryContract::class];
 
         return $view->make('localization::navbar', ['supportedLocales' => $this->getSupportedLocales()])
-                    ->render();
+            ->render();
     }
 
     /* -----------------------------------------------------------------
