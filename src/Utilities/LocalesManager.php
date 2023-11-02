@@ -270,6 +270,21 @@ class LocalesManager implements LocalesManagerContract
         return $this->config()->get("localization.$name", $default);
     }
 
+    public function getCacheFormat()
+    {
+        return (array) $this->getConfig('cache_key_format');
+    }
+
+    public function getUseExternalCache()
+    {
+        return (array) $this->getConfig('use_external_cache');
+    }
+
+    public function getExternalCacheTtl()
+    {
+        return (array) $this->getConfig('external_cache_ttl');
+    }
+
     /**
      * Get negotiated locale.
      *

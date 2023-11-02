@@ -13,6 +13,7 @@ use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 use Illuminate\Contracts\View\Factory as ViewFactoryContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 /**
  * Class     Localization
  *
@@ -56,6 +57,14 @@ class Localization implements LocalizationContract
 
     private static $localizedURLCache = [];
 
+    private $cacheKeyFormat = null;
+
+    private $useExternalCache = null;
+
+    private $externalCacheTtl = null;
+
+
+
     /* -----------------------------------------------------------------
      |  Constructor
      | -----------------------------------------------------------------
@@ -80,6 +89,13 @@ class Localization implements LocalizationContract
         $this->localesManager->setDefaultLocale(
             $this->app['config']->get('app.locale')
         );
+
+        $this->cacheKeyFormat = $this->localesManager->getCacheFormat();
+
+        $this->useExternalCache = $this->localesManager->getUseExternalCache();
+
+        $this->externalCacheTtl = $this->localesManager->getExternalCacheTtl();
+
     }
 
     /* -----------------------------------------------------------------
@@ -304,12 +320,26 @@ class Localization implements LocalizationContract
      */
     public function getLocalizedURL($locale = null, $url = null, array $originalAttributes = [], $showHiddenLocale = false, $fromLocale = null, $attributesSluged = false, $alloCache = true)
     {
+
         $args = func_get_args();
-        $cacheKey = md5(serialize($args));
+        $hash = md5(serialize($args));
+
+
+
+        $cacheKey = $this->cacheKeyFormat['prefix']
+            .str_replace(['{hash}', ], [$hash], $this->cacheKeyFormat['params']);
+
 
         if(array_key_exists($cacheKey, self::$localizedURLCache) && $alloCache){
             return self::$localizedURLCache[$cacheKey];
         }
+
+        if(\Cache::has($cacheKey) &&  $alloCache && $this->useExternalCache){
+            $fromCache = \Cache::get($cacheKey);
+            self::$localizedURLCache[$cacheKey] = $fromCache;
+            return $fromCache;
+        }
+
 
 
         if (is_null($locale))
@@ -342,6 +372,7 @@ class Localization implements LocalizationContract
                 );
                 if($alloCache){
                     self::$localizedURLCache[$cacheKey] = $resUrlFromRouteName;
+                    $attributes && $this->useExternalCache ? Cache::set($cacheKey, $resUrlFromRouteName, $this->externalCacheTtl) : Cache::forever($cacheKey, $resUrlFromRouteName);
                 }
 
                 return $resUrlFromRouteName;
@@ -363,6 +394,7 @@ class Localization implements LocalizationContract
             );
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
+                $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
             }
 
             return $res;
@@ -378,6 +410,7 @@ class Localization implements LocalizationContract
 
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
+                $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
             }
 
             return $res;
@@ -397,6 +430,7 @@ class Localization implements LocalizationContract
 
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
+                $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
             }
 
             return $res;
@@ -423,6 +457,7 @@ class Localization implements LocalizationContract
 
         if($alloCache){
             self::$localizedURLCache[$cacheKey] = $res;
+            $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
         }
 
         return $res;

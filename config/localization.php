@@ -9,6 +9,15 @@ return [
 
     'supported-locales'      => ['en', 'es', 'fr'],
 
+    'cache_key_format' => [
+        'prefix' => 'route_cache_',
+        'params' => '{hash}',
+    ],
+
+    'use_external_cache' => false,
+
+    'external_cache_ttl' => 60 * 60 *10,
+
     'accept-language-header' => true,
 
     'hide-default-in-url'    => false,
