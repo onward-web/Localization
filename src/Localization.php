@@ -397,7 +397,7 @@ class Localization implements LocalizationContract
             );
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
-                $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
+                //$cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
             }
 
             return $res;
@@ -413,7 +413,7 @@ class Localization implements LocalizationContract
 
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
-                $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
+                //$cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
             }
 
             return $res;
@@ -433,7 +433,7 @@ class Localization implements LocalizationContract
 
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
-                $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
+                //$cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
             }
 
             return $res;
