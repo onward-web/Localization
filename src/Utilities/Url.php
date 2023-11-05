@@ -50,7 +50,7 @@ class Url implements UrlContract
      *
      * @return string
      */
-    public static function substituteAttributes(array $attributes, $uri)
+    public static function substituteAttributes(array $attributes, $uri, $exceptNotReplacedParam)
     {
         $notReplacedAttributes = [];
         foreach ($attributes as $key => $value) {
@@ -68,6 +68,7 @@ class Url implements UrlContract
         // custom_attribute_in_url_modifly_1
         if($notReplacedAttributes){
             $query = parse_url($uri, PHP_URL_QUERY);
+            $notReplacedAttributes = Arr::except($notReplacedAttributes, $exceptNotReplacedParam);
             if ($query) {
                 $uri .=  '&'.Arr::query($notReplacedAttributes);
             } else {

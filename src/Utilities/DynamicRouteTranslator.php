@@ -50,7 +50,7 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
 
     }
 
-    public function getUrlFromRouteName($url, $locale, $routeName, $attributes = [], $attributesSluged = false){
+    public function getUrlFromRouteName($url, $locale, $routeName, $attributes = [], $attributesSluged = false, $exceptNotReplacedParam){
 
         $this->prepareDinamicRoute();
 
@@ -81,6 +81,7 @@ class DynamicRouteTranslator implements DynamicRouteTranslatorContract
 
         // custom_attribute_in_url_modifly_3
         if($attributes) {
+            $attributes = Arr::except($attributes, $exceptNotReplacedParam);
             $query = parse_url($url, PHP_URL_QUERY);
             if ($query) {
                 $url .= '&' . Arr::query($attributes);

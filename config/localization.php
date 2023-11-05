@@ -13,6 +13,7 @@ return [
         'prefix' => 'route_cache_',
         'params' => '{hash}',
     ],
+    'except_not_replaced_param' => ['filter'],
 
     'use_external_cache' => false,
 

@@ -63,7 +63,7 @@ class Localization implements LocalizationContract
 
     private $externalCacheTtl = null;
 
-
+    private $exceptNotReplacedParam = [];
 
     /* -----------------------------------------------------------------
      |  Constructor
@@ -96,6 +96,9 @@ class Localization implements LocalizationContract
 
         $this->externalCacheTtl = $this->localesManager->getExternalCacheTtl();
 
+        $this->exceptNotReplacedParam = $this->localesManager->getExceptNotReplacedParam();
+
+        $routeTranslator->setExceptNotReplacedParam($this->exceptNotReplacedParam);
     }
 
     /* -----------------------------------------------------------------
@@ -322,9 +325,11 @@ class Localization implements LocalizationContract
     {
 
         $args = func_get_args();
+        if (empty($url)) {
+            $args[] = $this->request()->fullUrl();
+        }
+
         $hash = md5(serialize($args));
-
-
 
         $cacheKey = $this->cacheKeyFormat['prefix']
             .str_replace(['{hash}', ], [$hash], $this->cacheKeyFormat['params']);
@@ -334,13 +339,11 @@ class Localization implements LocalizationContract
             return self::$localizedURLCache[$cacheKey];
         }
 
-        if(\Cache::has($cacheKey) &&  $alloCache && $this->useExternalCache){
+        if(Cache::has($cacheKey) &&  $alloCache && $this->useExternalCache){
             $fromCache = \Cache::get($cacheKey);
             self::$localizedURLCache[$cacheKey] = $fromCache;
             return $fromCache;
         }
-
-
 
         if (is_null($locale))
             $locale = $this->getCurrentLocale();
@@ -356,8 +359,9 @@ class Localization implements LocalizationContract
             $attributes = $originalAttributes;
         }
 
+        $cacheForever = $attributes || $originalAttributes ? false : true;
 
-
+        // например, переводим текущий маршут
         if (empty($url)) {
             if ($this->routeTranslator->hasCurrentRoute()) {
                 if (empty($attributes))
@@ -372,7 +376,7 @@ class Localization implements LocalizationContract
                 );
                 if($alloCache){
                     self::$localizedURLCache[$cacheKey] = $resUrlFromRouteName;
-                    $attributes && $this->useExternalCache ? Cache::set($cacheKey, $resUrlFromRouteName, $this->externalCacheTtl) : Cache::forever($cacheKey, $resUrlFromRouteName);
+                    $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $resUrlFromRouteName) : Cache::put($cacheKey, $resUrlFromRouteName, $this->externalCacheTtl);
                 }
 
                 return $resUrlFromRouteName;
@@ -381,8 +385,7 @@ class Localization implements LocalizationContract
             $url = $this->request()->fullUrl();
         }
 
-
-        // $originalAttributes пока не используем
+        // получаем данные маршута, routeName и findedItems, для текущего языка с последующим создания url с помощью getUrlFromRouteName, используеться для динамических url
         $dynamicDataFromUrl = $this->routeTranslator->getDynamicDataFromUrl($url, $originalAttributes, $fromLocale);
         if(isset($dynamicDataFromUrl['routeName'])){
             $res =  $this->getUrlFromRouteName(
@@ -394,13 +397,13 @@ class Localization implements LocalizationContract
             );
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
-                $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
+                $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
             }
 
             return $res;
         }
 
-
+        // используется для созданых роутов на основе переводчика
         if (
             $locale &&
             ($translatedRoute = $this->findTranslatedRouteByUrl($url, $attributes, $this->getCurrentLocale()))
@@ -410,7 +413,7 @@ class Localization implements LocalizationContract
 
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
-                $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
+                $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
             }
 
             return $res;
@@ -430,7 +433,7 @@ class Localization implements LocalizationContract
 
             if($alloCache){
                 self::$localizedURLCache[$cacheKey] = $res;
-                $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
+                $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
             }
 
             return $res;
@@ -448,7 +451,12 @@ class Localization implements LocalizationContract
 
         $url = Url::unparse($parsedUrl);
 
-        if (filter_var($url, FILTER_VALIDATE_URL)) return $url;
+        if (filter_var($url, FILTER_VALIDATE_URL)){
+            self::$localizedURLCache[$cacheKey] = $url;
+            $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $url) : Cache::put($cacheKey, $url, $this->externalCacheTtl);
+
+            return $url;
+        }
 
 
         $res  = $this->createUrlFromUri(
@@ -457,7 +465,7 @@ class Localization implements LocalizationContract
 
         if($alloCache){
             self::$localizedURLCache[$cacheKey] = $res;
-            $originalAttributes && $this->useExternalCache ? Cache::set($cacheKey, $res, $this->externalCacheTtl) : Cache::forever($cacheKey, $res);
+            $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
         }
 
         return $res;

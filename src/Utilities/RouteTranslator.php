@@ -53,6 +53,8 @@ class RouteTranslator implements RouteTranslatorContract
      */
     protected $translatedRoutes = [];
 
+    protected $exceptNotReplacedParam = [];
+
 
     /* -----------------------------------------------------------------
      |  Constructor
@@ -183,7 +185,7 @@ class RouteTranslator implements RouteTranslatorContract
         $uri        = trim($uri, '/');
 
         foreach ($this->translatedRoutes as $routeName) {
-            $url = Url::substituteAttributes($attributes, $this->translate($routeName));
+            $url = Url::substituteAttributes($attributes, $this->translate($routeName), $this->exceptNotReplacedParam);
 
             if ($url === $uri) return $routeName;
         }
@@ -235,10 +237,10 @@ class RouteTranslator implements RouteTranslatorContract
             $url = '/'.$locale;
 
         if(in_array($transKey, config('dynamic-url.candidates_route_names', []), true)){
-            return $this->dynamicRouteTranslator->getUrlFromRouteName($url, $locale, $transKey, $attributes, $attributesSluged);
+            return $this->dynamicRouteTranslator->getUrlFromRouteName($url, $locale, $transKey, $attributes, $attributesSluged, $this->exceptNotReplacedParam);
         }else{
             if ($this->hasTranslation($transKey, $locale))
-                $url = Url::substituteAttributes($attributes, $url.'/'.$this->trans($transKey, $locale));
+                $url = Url::substituteAttributes($attributes, $url.'/'.$this->trans($transKey, $locale), $this->exceptNotReplacedParam);
 
             return $url;
         }
@@ -304,5 +306,21 @@ class RouteTranslator implements RouteTranslatorContract
 
     public function getDynamicDataFromUrl($url, $attributes, $fromLocale){
         return $this->dynamicRouteTranslator->getDynamicDataFromUrl($url, $attributes, $fromLocale);
+    }
+
+    /**
+     * @return array
+     */
+    public function getExceptNotReplacedParam(): array
+    {
+        return $this->exceptNotReplacedParam;
+    }
+
+    /**
+     * @param array $exceptNotReplacedParam
+     */
+    public function setExceptNotReplacedParam(array $exceptNotReplacedParam): void
+    {
+        $this->exceptNotReplacedParam = $exceptNotReplacedParam;
     }
 }

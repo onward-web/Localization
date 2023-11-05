@@ -285,6 +285,10 @@ class LocalesManager implements LocalesManagerContract
         return (array) $this->getConfig('external_cache_ttl');
     }
 
+    public function getExceptNotReplacedParam(){
+        return (array) $this->getConfig('except_not_replaced_param');
+    }
+
     /**
      * Get negotiated locale.
      *

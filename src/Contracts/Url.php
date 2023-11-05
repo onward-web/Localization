@@ -33,7 +33,7 @@ interface Url
      *
      * @return string
      */
-    public static function substituteAttributes(array $attributes, $uri);
+    public static function substituteAttributes(array $attributes, $uri, array $exceptNotReplacedParam);
 
     /**
      * Build URL using array data from parse_url.
