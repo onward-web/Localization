@@ -7,7 +7,8 @@ return [
      | -----------------------------------------------------------------
      */
 
-    'supported-locales'      => ['en', 'es', 'fr'],
+    // 'supported-locales'      => ['en', 'ru', 'fi', 'et', 'uk'],
+    'supported-locales'      => ['ru', 'uk'],
 
     'cache_key_format' => [
         'prefix' => 'route_cache_',
@@ -19,9 +20,11 @@ return [
 
     'external_cache_ttl' => 60 * 60 *10,
 
+    'allow_types_to_external_cache' => ['translate_current_simple_translatable'],
+
     'accept-language-header' => true,
 
-    'hide-default-in-url'    => false,
+    'hide-default-in-url'    => true,
 
     'redirection-code'       => 302,
 
@@ -34,11 +37,11 @@ return [
 
     'route'                  => [
         'middleware' => [
-            'localization-session-redirect' => true,
+            'localization-session-redirect' => false,
             'localization-cookie-redirect'  => false,
-            'localization-redirect'         => true,
+            'localization-redirect'         => false,
             'localized-routes'              => true,
-            'translation-redirect'          => true,
+            'translation-redirect'          => false,
         ],
     ],
 
@@ -50,6 +53,21 @@ return [
     'ignored-redirection' => [
         //
     ],
+
+
+    'model_params_relation' => [
+
+        \App\Models\Example::class => [
+            'page',
+
+        ],
+        \App\Models\Example2::class => [
+            'category'
+        ],
+
+    ],
+
+
 
     /* -----------------------------------------------------------------
      |  Locales

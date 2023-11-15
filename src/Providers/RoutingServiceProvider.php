@@ -7,7 +7,7 @@ namespace Arcanedev\Localization\Providers;
 use Arcanedev\Localization\Middleware\{
     LocaleCookieRedirect, LocaleSessionRedirect, LocalizationRedirect, LocalizationRoutes, TranslationRedirect
 };
-use Arcanedev\Localization\Routing\Router;
+use Arcanedev\Localization\Routing\RouterTranslatable;
 use Arcanedev\Support\Providers\RouteServiceProvider as ServiceProvider;
 
 /**
@@ -50,7 +50,7 @@ class RoutingServiceProvider extends ServiceProvider
         /** @var  \Illuminate\Routing\Router  $router */
         $router = $this->app['router'];
 
-        $router->mixin(new Router);
+        $router->mixin(new RouterTranslatable);
 
         foreach ($this->routeMiddleware as $name => $class) {
             $router->aliasMiddleware($name, $class);

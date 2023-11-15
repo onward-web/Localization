@@ -8,7 +8,7 @@ use Arcanedev\Localization\Contracts\RouteBindable;
 use Arcanedev\Localization\Contracts\Url as UrlContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-
+use Arcanedev\Localization\Localization;
 /**
  * Class     Url
  *
@@ -50,7 +50,7 @@ class Url implements UrlContract
      *
      * @return string
      */
-    public static function substituteAttributes(array $attributes, $uri, $exceptNotReplacedParam)
+    public static function substituteAttributes(array $attributes, $uri)
     {
         $notReplacedAttributes = [];
         foreach ($attributes as $key => $value) {
@@ -68,7 +68,7 @@ class Url implements UrlContract
         // custom_attribute_in_url_modifly_1
         if($notReplacedAttributes){
             $query = parse_url($uri, PHP_URL_QUERY);
-            $notReplacedAttributes = Arr::except($notReplacedAttributes, $exceptNotReplacedParam);
+            $notReplacedAttributes = Arr::except($notReplacedAttributes, Localization::getExceptNotReplacedParam());
             if ($query) {
                 $uri .=  '&'.Arr::query($notReplacedAttributes);
             } else {
@@ -149,7 +149,7 @@ class Url implements UrlContract
      *
      * @return bool
      */
-    private static function hasAttributesFromUriPath($url, $path, &$attributes): bool
+    public static function hasAttributesFromUriPath($url, $path, &$attributes): bool
     {
         $i     = 0;
         $match = true;

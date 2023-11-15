@@ -219,4 +219,6 @@ interface Localization
      * @return bool
      */
     public function isLocaleSupported($locale);
+
+    public static function getExceptNotReplacedParam();
 }

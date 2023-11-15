@@ -10,6 +10,7 @@ use Arcanedev\Localization\Exceptions\UndefinedSupportedLocalesException;
 use Arcanedev\Localization\Exceptions\UnsupportedLocaleException;
 use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 
+
 /**
  * Class     LocalesManager
  *
@@ -277,17 +278,22 @@ class LocalesManager implements LocalesManagerContract
 
     public function getUseExternalCache()
     {
-        return (array) $this->getConfig('use_external_cache');
+        return (bool) $this->getConfig('use_external_cache');
     }
 
     public function getExternalCacheTtl()
     {
-        return (array) $this->getConfig('external_cache_ttl');
+        return (int) $this->getConfig('external_cache_ttl');
     }
 
     public function getExceptNotReplacedParam(){
         return (array) $this->getConfig('except_not_replaced_param');
     }
+
+    public function getAllowTypesToExternalCache(){
+        return (array) $this->getConfig('allow_types_to_external_cache ');
+    }
+
 
     /**
      * Get negotiated locale.

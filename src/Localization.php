@@ -14,6 +14,8 @@ use Illuminate\Contracts\View\Factory as ViewFactoryContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Arcanedev\Localization\Contracts\RouteCacheHelper;
+
 /**
  * Class     Localization
  *
@@ -55,15 +57,26 @@ class Localization implements LocalizationContract
     private $localesManager;
 
 
-    private static $localizedURLCache = [];
+    /**
+     * The LocalesManager instance.
+     *
+     * @var \Arcanedev\Localization\Contracts\RouteCacheHelper
+     */
+    private $routeCacheHelper = null;
 
-    private $cacheKeyFormat = null;
+    /**
+     * @var null|array
+     */
+    protected static $preparedDataDynamicRoutes = null;
 
-    private $useExternalCache = null;
+    /**
+     * @var null|array
+     */
+    protected static $modelParamsRelation = null;
 
-    private $externalCacheTtl = null;
+    public static $exceptNotReplacedParam = [];
 
-    private $exceptNotReplacedParam = [];
+
 
     /* -----------------------------------------------------------------
      |  Constructor
@@ -76,11 +89,13 @@ class Localization implements LocalizationContract
      * @param  \Illuminate\Contracts\Foundation\Application       $app
      * @param  \Arcanedev\Localization\Contracts\RouteTranslator  $routeTranslator
      * @param  \Arcanedev\Localization\Contracts\LocalesManager   $localesManager
+     * @param  \Arcanedev\Localization\Contracts\RouteCacheHelper  $routeCacheHelper
      */
     public function __construct(
         ApplicationContract     $app,
         RouteTranslatorContract $routeTranslator,
-        LocalesManagerContract  $localesManager
+        LocalesManagerContract  $localesManager,
+        RouteCacheHelper  $routeCacheHelper
     ) {
         $this->app             = $app;
         $this->routeTranslator = $routeTranslator;
@@ -90,16 +105,16 @@ class Localization implements LocalizationContract
             $this->app['config']->get('app.locale')
         );
 
-        $this->cacheKeyFormat = $this->localesManager->getCacheFormat();
+        $routeCacheHelper->cacheKeyFormat = $this->localesManager->getCacheFormat();
+        $routeCacheHelper->useExternalCache = $this->localesManager->getUseExternalCache();
+        $routeCacheHelper->externalCacheTtl = $this->localesManager->getExternalCacheTtl();
+        $routeCacheHelper->allowTypeToExternalCache = $this->localesManager->getAllowTypesToExternalCache();
 
-        $this->useExternalCache = $this->localesManager->getUseExternalCache();
+        $this->routeCacheHelper = $routeCacheHelper;
 
-        $this->externalCacheTtl = $this->localesManager->getExternalCacheTtl();
-
-        $this->exceptNotReplacedParam = $this->localesManager->getExceptNotReplacedParam();
-
-        $routeTranslator->setExceptNotReplacedParam($this->exceptNotReplacedParam);
+        self::$exceptNotReplacedParam = $this->localesManager->getExceptNotReplacedParam();
     }
+
 
     /* -----------------------------------------------------------------
      |  Getters & Setters
@@ -324,34 +339,42 @@ class Localization implements LocalizationContract
     public function getLocalizedURL($locale = null, $url = null, array $originalAttributes = [], $showHiddenLocale = false, $fromLocale = null, $attributesSluged = false, $alloCache = true)
     {
 
-        $args = func_get_args();
-        if (empty($url)) {
-            $args[] = $this->request()->fullUrl();
-        }
-
-        $hash = md5(serialize($args));
-
-        $cacheKey = $this->cacheKeyFormat['prefix']
-            .str_replace(['{hash}', ], [$hash], $this->cacheKeyFormat['params']);
 
 
-        if(array_key_exists($cacheKey, self::$localizedURLCache) && $alloCache){
-            return self::$localizedURLCache[$cacheKey];
-        }
-
-        if(Cache::has($cacheKey) &&  $alloCache && $this->useExternalCache){
-            $fromCache = \Cache::get($cacheKey);
-            self::$localizedURLCache[$cacheKey] = $fromCache;
-            return $fromCache;
-        }
-
-        if (is_null($locale))
+        if (is_null($locale)) {
             $locale = $this->getCurrentLocale();
+        }
 
-        if (empty($fromLocale))
+        if (empty($fromLocale)) {
             $fromLocale = $this->getCurrentLocale();
+        }
 
         $this->isLocaleSupportedOrFail($locale);
+
+        // не кэшируем при наличии query string
+        $cacheKey = null;
+        $queryInUrl = false;
+        if($alloCache){
+
+            $cacheArgs['locale'] = $locale;
+            $cacheArgs['url'] = $url;
+            $cacheArgs['attributes'] = $originalAttributes;
+            $cacheArgs['showHiddenLocale'] = $showHiddenLocale;
+            $cacheArgs['fromLocale'] = $fromLocale;
+            $cacheArgs['attributesSluged'] = $attributesSluged;
+            if (empty($url)) {
+                $cacheArgs['url'] = $this->request()->fullUrl();
+            }
+
+            $cacheKey = (string)$this->routeCacheHelper->createCacheKey($cacheArgs);
+
+            $fromCache = $this->routeCacheHelper->getFromCache($cacheKey);
+            if($fromCache){
+                return $fromCache;
+            }
+            $queryInUrl = (bool)$this->routeCacheHelper->isExistQuery($cacheArgs['url']);
+        }
+
 
         if (empty($originalAttributes))
             $attributes = Url::extractAttributes($url);
@@ -359,51 +382,88 @@ class Localization implements LocalizationContract
             $attributes = $originalAttributes;
         }
 
-        $cacheForever = $attributes || $originalAttributes ? false : true;
 
-        // например, переводим текущий маршут
+
+        // пуcтой url, передим текущий маршут, здесь переводиться только переводымий маршут на основе переводчикам
         if (empty($url)) {
             if ($this->routeTranslator->hasCurrentRoute()) {
                 if (empty($attributes))
                     $attributes = $this->request()->route()->parameters();
 
-                $resUrlFromRouteName = $this->getUrlFromRouteName(
+                $resCurrentSimpleTranslate = $this->getUrlFromRouteName(
                     $locale,
                     $this->routeTranslator->getCurrentRoute(),
                     $attributes,
                     $showHiddenLocale,
                     $attributesSluged
                 );
+
+
                 if($alloCache){
-                    self::$localizedURLCache[$cacheKey] = $resUrlFromRouteName;
-                    $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $resUrlFromRouteName) : Cache::put($cacheKey, $resUrlFromRouteName, $this->externalCacheTtl);
+                    $this->routeCacheHelper->localCache[$cacheKey] = $resCurrentSimpleTranslate;
+                    $this->routeCacheHelper->isSaveToExternal($queryInUrl, 'translate_current_simple_translatable') ? $this->routeCacheHelper->saveToExternalCache($cacheKey, $resCurrentSimpleTranslate) : null;
+
                 }
 
-                return $resUrlFromRouteName;
+                return $resCurrentSimpleTranslate;
             }
 
             $url = $this->request()->fullUrl();
         }
 
-        // получаем данные маршута, routeName и findedItems, для текущего языка с последующим создания url с помощью getUrlFromRouteName, используеться для динамических url
-        $dynamicDataFromUrl = $this->routeTranslator->getDynamicDataFromUrl($url, $originalAttributes, $fromLocale);
-        if(isset($dynamicDataFromUrl['routeName'])){
-            $res =  $this->getUrlFromRouteName(
+        // Ситуация с маршутами
+        // имя роута указано
+        // имя роута указано, перевод текущего url
+
+        // Стуация со slug
+        //  $attributesSluged = false
+        //  $attributesSluged = true
+
+        // Ситуация по $locale $fromLocale
+        // $locale === $fromLocale
+        // $locale !== $fromLocale
+
+
+        // Ситуация когда необходимо задействовать getDynamicDataFromUrl
+        //$locale !== $fromLocale || !self::isDynamicRoute($url)
+
+        $dynamicRouteName = $dynamicAttributes = null;
+        // при переводе текущего url, self::isDynamicRoute даст false, также необходимо преобразовать ;
+        if($locale !== $fromLocale ||  !self::isDynamicRoute($url) ){
+            $dynamicDataFromUrl = $this->routeTranslator->getDynamicDataFromUrl($url, $fromLocale, $this->getSupportedLocales());
+            if(isset($dynamicDataFromUrl['routeName'])){
+                $dynamicRouteName = $dynamicDataFromUrl['routeName'];
+                $dynamicAttributes = $dynamicDataFromUrl['findedItems'];
+                $attributesSluged = false;
+            }
+        }else if(self::isDynamicRoute($url)){
+            $dynamicRouteName = $url;
+            $dynamicAttributes = $attributes;
+        }
+
+
+        // перевод динамических маршутов
+        if($dynamicRouteName){
+            $resCreateUrlFromDynamic =  $this->getUrlFromRouteName(
                 $locale,
-                $dynamicDataFromUrl['routeName'],
-                $dynamicDataFromUrl['findedItems'],
+                $dynamicRouteName,
+                $dynamicAttributes,
                 $showHiddenLocale,
                 $attributesSluged
             );
             if($alloCache){
-                self::$localizedURLCache[$cacheKey] = $res;
-                //$cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
+                $this->routeCacheHelper->localCache[$cacheKey] = $resCreateUrlFromDynamic;
+                $typeName = $this->routeCacheHelper->transformTypeName($dynamicRouteName);
+                $this->routeCacheHelper->isSaveToExternal($queryInUrl, 'translate_dynamic_'.$typeName) ? $this->routeCacheHelper->saveToExternalCache($cacheKey, $resCreateUrlFromDynamic) : null;
+
             }
 
-            return $res;
+            return $resCreateUrlFromDynamic;
         }
 
-        // используется для созданых роутов на основе переводчика
+
+
+        // переводим простой переведимые маршут, по $translatedRoute,  localization()->getLocalizedURL('ru', 'routes.garage.index')
         if (
             $locale &&
             ($translatedRoute = $this->findTranslatedRouteByUrl($url, $attributes, $this->getCurrentLocale()))
@@ -412,13 +472,12 @@ class Localization implements LocalizationContract
             $res = $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
 
             if($alloCache){
-                self::$localizedURLCache[$cacheKey] = $res;
-                //$cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
+                $this->routeCacheHelper->localCache[$cacheKey] = $res;
+                $this->routeCacheHelper->isSaveToExternal($queryInUrl, 'translate_simple_by_route_name') ? $this->routeCacheHelper->saveToExternalCache($cacheKey, $res) : null;
             }
 
             return $res;
         }
-
 
 
         $baseUrl    = $this->request()->getBaseUrl();
@@ -432,8 +491,8 @@ class Localization implements LocalizationContract
             $res = $this->getUrlFromRouteName($locale, $translatedRoute, $attributes, $showHiddenLocale, $attributesSluged);
 
             if($alloCache){
-                self::$localizedURLCache[$cacheKey] = $res;
-                //$cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
+                $this->routeCacheHelper->localCache[$cacheKey] = $res;
+                $this->routeCacheHelper->isSaveToExternal($queryInUrl, 'translate_base_url') ? $this->routeCacheHelper->saveToExternalCache($cacheKey, $res) : null;
             }
 
             return $res;
@@ -452,8 +511,8 @@ class Localization implements LocalizationContract
         $url = Url::unparse($parsedUrl);
 
         if (filter_var($url, FILTER_VALIDATE_URL)){
-            self::$localizedURLCache[$cacheKey] = $url;
-            $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $url) : Cache::put($cacheKey, $url, $this->externalCacheTtl);
+            $this->routeCacheHelper->localCache[$cacheKey] = $url;
+            $this->routeCacheHelper->isSaveToExternal($queryInUrl, 'translate_parsed_url') ? $this->routeCacheHelper->saveToExternalCache($cacheKey, $url) : null;
 
             return $url;
         }
@@ -464,8 +523,9 @@ class Localization implements LocalizationContract
         );
 
         if($alloCache){
-            self::$localizedURLCache[$cacheKey] = $res;
-            $cacheForever && $this->useExternalCache ? Cache::forever($cacheKey, $res) : Cache::put($cacheKey, $res, $this->externalCacheTtl);
+            $this->routeCacheHelper->localCache[$cacheKey] = $res;
+            $this->routeCacheHelper->isSaveToExternal($queryInUrl, 'translate_create_url_from_uri') ? $this->routeCacheHelper->saveToExternalCache($cacheKey, $url) : null;
+
         }
 
         return $res;
@@ -487,18 +547,13 @@ class Localization implements LocalizationContract
             : $this->baseUrl.$uri;
     }
 
-    /**
-     * Get locales navigation bar.
-     *
-     * @return string
-     */
-    public function localesNavbar()
+    public static function getExceptNotReplacedParam(): array
     {
-        /** @var  \Illuminate\Contracts\View\Factory  $view */
-        $view = $this->app[ViewFactoryContract::class];
+        if(!self::$exceptNotReplacedParam){
+            self::$exceptNotReplacedParam = config('localization.except_not_replaced_param');
+        }
 
-        return $view->make('localization::navbar', ['supportedLocales' => $this->getSupportedLocales()])
-            ->render();
+        return self::$exceptNotReplacedParam;
     }
 
     /* -----------------------------------------------------------------
@@ -618,5 +673,85 @@ class Localization implements LocalizationContract
             throw new UnsupportedLocaleException(
                 "Locale '{$locale}' is not in the list of supported locales."
             );
+    }
+
+
+    public static function getPreparedDataDynamicRoutes()
+    {
+        if(self::$preparedDataDynamicRoutes){
+            return self::$preparedDataDynamicRoutes;
+        }
+
+        $allRoutes = app('router')->getRoutes();
+
+        foreach ($allRoutes as $route) {
+
+            if(!$route->dynamic){
+                continue;
+            }
+            // путь к маршуту
+            $routeUri = $route->uri();
+            // делим на слеши, для дальнейшего поиска необезательных атрибутов
+            $routeUriPaths = explode('/', $routeUri);
+
+            // необезательные параметры
+            $optionalAttribute = [];
+
+            foreach($routeUriPaths as $routeUriPath){
+                if(str_starts_with($routeUriPath, '{?') || str_ends_with($routeUriPath, '?}')){
+                    $attributeName    = preg_replace(['/{/', '/\?/', '/}/'], '', $routeUriPath);
+
+                    $optionalAttribute[] = (string)$attributeName;
+                }
+            }
+
+            // формируем масссив обезательных параметров
+            $parameterNames = $route->parameterNames();
+
+            $requiredParameters = [];
+            foreach($parameterNames as $parameterName){
+                if(!in_array($parameterName, $optionalAttribute, true)){
+                    $requiredParameters[] = (string)$parameterName;
+                }
+            }
+
+
+            self::$preparedDataDynamicRoutes[$route->getName()] = [
+                'requiredParameters' => $requiredParameters,
+                'optionalParameters' => $optionalAttribute,
+                'parameters' => $route->parameterNames(),
+                'route' => $route
+            ];
+        }
+
+        return self::$preparedDataDynamicRoutes;
+    }
+
+    public static function getModelParamsRelation()
+    {
+        if(self::$modelParamsRelation){
+            return self::$modelParamsRelation;
+        }
+        self::$modelParamsRelation = config('localization.model_params_relation');
+
+        return self::$modelParamsRelation;
+    }
+
+    public static function getModelRelationByParam(string $param){
+        $modelParamsRelation = self::getModelParamsRelation();
+
+        foreach($modelParamsRelation as $model => $params){
+            if(in_array($param, $params, true)){
+                return $model;
+            }
+        }
+    }
+
+    public static function isDynamicRoute(string $routeName){
+        $preparedDataDynamicRoutes = self::getPreparedDataDynamicRoutes();
+        if(array_key_exists($routeName, $preparedDataDynamicRoutes)){
+            return true;
+        }
+        return false;
     }
 }
