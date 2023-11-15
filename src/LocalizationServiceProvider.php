@@ -40,6 +40,7 @@ class LocalizationServiceProvider extends PackageServiceProvider
         $this->registerConfig();
 
         $this->registerProvider(Providers\RoutingServiceProvider::class);
+		
     }
 
     /**
@@ -53,5 +54,6 @@ class LocalizationServiceProvider extends PackageServiceProvider
             $this->publishConfig();
             $this->publishViews();
         }
+		$this->app->singleton(\Arcanedev\Localization\Contracts\RouteCacheHelper::class, \Arcanedev\Localization\Utilities\RouteCacheHelper::class);
     }
 }
