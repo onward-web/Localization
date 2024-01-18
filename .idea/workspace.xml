@@ -28,7 +28,11 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "WebServerToolWindowFactoryState": "true",
+<<<<<<< Updated upstream
     "last_opened_file_path": "C:/Резерваки/Проекты_/autovaruosad.ee__",
+=======
+    "last_opened_file_path": "A:/Проекты/new.kuzov-parts.com.ua",
+>>>>>>> Stashed changes
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -66,7 +70,12 @@
       <workItem from="1678470824261" duration="825000" />
       <workItem from="1696364287319" duration="3953000" />
       <workItem from="1698775194932" duration="1285000" />
+<<<<<<< Updated upstream
       <workItem from="1698885965570" duration="17857000" />
+=======
+      <workItem from="1698885965570" duration="20179000" />
+      <workItem from="1700081791487" duration="969000" />
+>>>>>>> Stashed changes
     </task>
     <task id="LOCAL-00001" summary="еуые">
       <created>1638200354087</created>
